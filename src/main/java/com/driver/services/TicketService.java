@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 @Service
@@ -27,8 +28,8 @@ public class TicketService {
     @Autowired
     PassengerRepository passengerRepository;
 
-    @Autowired
-    TrainService trainService;
+//    @Autowired
+//    TrainService trainService;
 
 
     public Integer bookTicket(BookTicketEntryDto bookTicketEntryDto)throws Exception{
@@ -67,14 +68,24 @@ public class TicketService {
 
 
         //check the seats availability
-        SeatAvailabilityEntryDto seatAvailabilityEntryDto= new SeatAvailabilityEntryDto();
-        seatAvailabilityEntryDto.setFromStation(bookTicketEntryDto.getFromStation());
-        seatAvailabilityEntryDto.setToStation(bookTicketEntryDto.getToStation());
-        seatAvailabilityEntryDto.setTrainId(bookTicketEntryDto.getTrainId());
 
-        int availableSeats=trainService.calculateAvailableSeats(seatAvailabilityEntryDto);
+        String [] routeStations= route;
+        HashMap<String,Integer> map= new HashMap<>();
+        for(int i=0; i<routeStations.length; i++){
+            map.put(routeStations[i], i);
+        }
+        int  os= map.get(bookTicketEntryDto.getFromStation().toString());
+        int oe= map.get(bookTicketEntryDto.getToStation().toString());
+        int totalseatAvailable= train.getNoOfSeats();
+        for(Ticket ticket: train.getBookedTickets()){
+            int ts= map.get(ticket.getFromStation().toString());
+            int te= map.get(ticket.getToStation().toString());
+            if(oe>ts && os<te){
+                totalseatAvailable-=ticket.getPassengersList().size();
+            }
+        }
 
-        if(availableSeats<bookTicketEntryDto.getNoOfSeats()){
+        if(totalseatAvailable<bookTicketEntryDto.getNoOfSeats()){
             throw new Exception("Less tickets are available");
         }
 
